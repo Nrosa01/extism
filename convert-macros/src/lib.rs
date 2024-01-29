@@ -12,7 +12,7 @@ fn convert_path() -> Path {
             let ident = format_ident!("{name}");
             parse_quote!(::#ident::convert)
         }
-        Ok(FoundCrate::Itself) => parse_quote!(crate::core),
+        Ok(FoundCrate::Itself) => parse_quote!(crate),
         Err(_) => match crate_name("extism-convert").or_else(|_| crate_name("extism_pdk")) {
             Ok(FoundCrate::Name(name)) => {
                 let ident = format_ident!("{name}");
@@ -66,7 +66,7 @@ pub fn to_bytes(
     Ok(quote! {
         impl #impl_generics #convert::ToBytes<'__to_bytes_a> for #ident #type_generics #where_clause
         {
-            type Bytes = ::std::vec::Vec<u8>;
+            type Bytes = Vec<u8>;
 
             fn to_bytes(&self) -> Result<Self::Bytes, #convert::Error> {
                 #convert::ToBytes::to_bytes(&#encoding(self)).map(|__bytes| __bytes.as_ref().to_vec())

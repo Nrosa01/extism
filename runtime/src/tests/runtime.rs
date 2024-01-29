@@ -32,7 +32,8 @@ fn hello_world_panic(
     panic!("This should not run");
 }
 
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, ToBytes, FromBytes)]
+#[encoding(Json)]
 pub struct Count {
     count: usize,
 }
@@ -172,8 +173,8 @@ fn test_plugin_threads() {
         let a = std::thread::spawn(move || {
             let mut plugin = plugin.lock().unwrap();
             for _ in 0..10 {
-                let Json(count) = plugin
-                    .call::<_, Json<Count>>("count_vowels", "this is a test aaa")
+                let count = plugin
+                    .call::<_, Count>("count_vowels", "this is a test aaa")
                     .unwrap();
                 assert_eq!(Count { count: 7 }, count);
             }
@@ -243,7 +244,7 @@ typed_plugin!(pub TestTypedPluginGenerics {
 });
 
 typed_plugin!(CountVowelsPlugin {
-    count_vowels(&str) -> Json<Count>;
+    count_vowels(&str) -> Count;
 });
 
 #[test]
@@ -258,8 +259,8 @@ fn test_typed_plugin_macro() {
 
     let mut plugin: CountVowelsPlugin = Plugin::new(WASM, [f], true).unwrap().try_into().unwrap();
 
-    let Json(output0): Json<Count> = plugin.count_vowels("abc123").unwrap();
-    let Json(output1): Json<Count> = plugin.0.call("count_vowels", "abc123").unwrap();
+    let output0: Count = plugin.count_vowels("abc123").unwrap();
+    let output1: Count = plugin.0.call("count_vowels", "abc123").unwrap();
 
     assert_eq!(output0, output1)
 }
@@ -279,7 +280,7 @@ fn test_multiple_instantiations() {
     // This is 10,001 because the wasmtime store limit is 10,000 - we want to test
     // that our reinstantiation process is working and that limit is never hit.
     for _ in 0..10001 {
-        let _output: Json<Count> = plugin.count_vowels("abc123").unwrap();
+        let _output: Count = plugin.count_vowels("abc123").unwrap();
     }
 }
 
@@ -560,7 +561,7 @@ fn test_disable_cache() {
         .try_into()
         .unwrap();
     let t = std::time::Instant::now() - start;
-    let _output: Json<Count> = plugin.count_vowels("abc123").unwrap();
+    let _output: Count = plugin.count_vowels("abc123").unwrap();
 
     // This should take longer than the first run
     let start = std::time::Instant::now();
@@ -571,7 +572,7 @@ fn test_disable_cache() {
         .try_into()
         .unwrap();
     let t1 = std::time::Instant::now() - start;
-    let _output: Json<Count> = plugin.count_vowels("abc123").unwrap();
+    let _output: Count = plugin.count_vowels("abc123").unwrap();
 
     assert!(t < t1);
 }
